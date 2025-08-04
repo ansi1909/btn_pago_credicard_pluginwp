@@ -1,0 +1,4 @@
+Hasta esta versión la aplicación funciona de la siguiente manera:
+Valida si los campos de facturación no están llenos, en ese caso no abre el modal de pago
+Una vez estos campos se llenan si permite abrir el modal de pago
+Se generea el cobro exitosamente y si eres un usuario previamente logueado te redirige directament a la página de thank you page y emite el ticket del producto, además le llega correo con el pedido y el ticket adjunto al usuario

@@ -1,0 +1,88 @@
+.voucher-cuerpo {
+    font-family: Arial, sans-serif;
+    background-color: #f5f5f5;
+    margin: 0;
+    padding: 20px;
+}
+
+.voucher-container {
+    max-width: 600px;
+    margin: 0 auto;
+    background: white;
+    border-radius: 10px;
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+}
+
+.voucher-header {
+    background-color: #2c3e50;
+    color: white;
+    padding: 20px;
+    text-align: center;
+    font-size: 24px;
+    font-weight: bold;
+}
+
+.voucher-body {
+    padding: 25px;
+}
+
+.voucher-logo {
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+.voucher-logo img {
+    max-width: 150px;
+}
+
+.voucher-success {
+    background-color: #27ae60;
+    color: white;
+    padding: 10px;
+    text-align: center;
+    font-weight: bold;
+    border-radius: 5px;
+    margin-bottom: 20px;
+}
+
+.voucher-details {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.voucher-details tr td {
+    padding: 12px 10px;
+    border-bottom: 1px solid #eee;
+}
+
+.voucher-details tr:last-child td {
+    border-bottom: none;
+}
+
+.voucher-details tr td:first-child {
+    font-weight: bold;
+    width: 40%;
+    color: #555;
+}
+
+.voucher-footer {
+    text-align: center;
+    padding: 15px;
+    background-color: #f9f9f9;
+    font-size: 12px;
+    color: #777;
+}
+
+.qr-code {
+    text-align: center;
+    margin: 20px 0;
+}
+
+.qr-code img {
+    width: 120px;
+    height: 120px;
+    border: 1px solid #ddd;
+    padding: 5px;
+    background: white;
+}

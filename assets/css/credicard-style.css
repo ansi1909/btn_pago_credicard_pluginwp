@@ -1,0 +1,57 @@
+#credicard-payment-button-wrapper {
+    margin-top: 20px;
+}
+
+#pagar {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #0079ff, #0051cc);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    padding: 12px 24px;
+    border: none;
+    border-radius: 12px;
+    color: white;
+    font-size: 16px;
+    font-family: 'Arial', sans-serif;
+    font-weight: bold;
+    text-transform: uppercase;
+    text-decoration: none;
+    cursor: pointer;
+    transition: all 0.3s ease-in-out;
+    position: relative;
+    overflow: hidden;
+}
+
+#pagar:disabled,
+#pagar[disabled] {
+    background: gray !important;
+    color: lightgray !important;
+    cursor: not-allowed !important;
+}
+
+#pagar:hover {
+    background: linear-gradient(135deg, #0051cc, #003a99);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
+}
+
+#pagar:focus {
+    outline: 2px solid #0051cc;
+    outline-offset: 3px;
+}
+
+#pagar::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: rgba(255, 255, 255, 0.2);
+    transform: skewX(-45deg);
+    transition: left 0.4s ease-in-out;
+}
+
+#pagar:hover::before {
+    left: 150%;
+}
