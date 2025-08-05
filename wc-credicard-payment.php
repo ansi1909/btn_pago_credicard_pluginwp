@@ -45,6 +45,7 @@ function credicard_init_plugin() {
     $gateway_file = plugin_dir_path(__FILE__) . 'includes/class-wc-gateway-credicard.php';
     $ajax_file = plugin_dir_path(__FILE__) . 'includes/ajax-handlers.php';
     $hooks_file = plugin_dir_path(__FILE__) . 'includes/checkout-hooks.php'; // ← nuevo archivo
+    $webhook_file = plugin_dir_path(__FILE__) . 'includes/webhook-handler.php'; // ← nuevo archivo
 
     if (file_exists($gateway_file)) {
         require_once $gateway_file;
@@ -66,6 +67,12 @@ function credicard_init_plugin() {
         require_once $hooks_file;
     } else {
         error_log('Checkout Hooks: Missing file');
+    }
+
+    if (file_exists($webhook_file)) {
+        require_once $webhook_file;
+    } else {
+        error_log('Checkout WebHooks: Missing file');
     }
 
 }

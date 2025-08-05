@@ -8,7 +8,6 @@ class WC_Gateway_Credicard extends WC_Payment_Gateway {
     public $client_id;
     public $client_secret;
     public $api_url;
-    public $test_mode;
 
     public function __construct() {
         $this->id = 'credicard';
@@ -25,8 +24,7 @@ class WC_Gateway_Credicard extends WC_Payment_Gateway {
         $this->client_id     = $this->get_option('client_id');
         $this->client_secret = $this->get_option('client_secret');
         $this->api_url       = $this->get_option('api_url');
-        $this->test_mode     = 'yes' === $this->get_option('test_mode');
-
+        
         add_action('woocommerce_update_options_payment_gateways_' . $this->id, [$this, 'process_admin_options']);
         add_action('wp_enqueue_scripts', [$this, 'enqueue_scripts']);
     }
@@ -68,12 +66,7 @@ class WC_Gateway_Credicard extends WC_Payment_Gateway {
                 'description' => 'Clave secreta de autenticación.',
                 'default'     => '',
             ],
-            'test_mode' => [
-                'title'       => 'Modo pruebas',
-                'type'        => 'checkbox',
-                'label'       => 'Habilitar ambiente de pruebas',
-                'default'     => 'yes',
-            ],
+            
         ];
     }
 
@@ -159,7 +152,22 @@ function credicard_finalize_order() {
 
     $billing_data = isset($_POST['billing_data']) ? $_POST['billing_data'] : [];
     $fecha_asistencia = $_POST['fecha_asistencia'] ?? null;
-    $payment_id = sanitize_text_field($_POST['payment_id']);
+    $payment_id = sanitize_text_field($_POST['payment_id'] ?? '');
+    if (empty($payment_id)) {
+        wp_send_json_error(['message' => 'Falta el payment_id.']);
+    }
+
+    // Validar si ya existe una orden con este payment_id
+    $existing_orders = wc_get_orders([
+        'meta_key'   => '_credicard_payment_id',
+        'meta_value' => $payment_id,
+        'limit'      => 1,
+    ]);
+
+    if (!empty($existing_orders)) {
+        wp_send_json_error(['message' => 'Esta orden ya fue creada anteriormente.']);
+    }
+
     $client_id = $gateway->client_id;
     $client_secret = $gateway->client_secret;
     $api_url = trailingslashit($gateway->api_url) . 'v1/api/commerce/paymentOrder/clientCredentials/';
@@ -179,7 +187,6 @@ function credicard_finalize_order() {
     }
 
     $body = json_decode(wp_remote_retrieve_body($response), true);
-    error_log("[Credicard] El estatus del pago es: " . $body['data']['status']);
 
     if (!isset($body['data']['status']) || strtolower($body['data']['status']) !== 'paid') {
         error_log("[Credicard] Estado del pago no válido o aún pendiente.");
@@ -323,6 +330,7 @@ function credicard_finalize_order() {
         $order->update_meta_data('_credicard_ref', $body['data']['transaction']['receipt']['result']['ref'] ?? '');
         $order->set_billing_first_name($billing_first_name);
         $order->set_billing_last_name($billing_last_name);
+        $order->set_billing_email($billing_email);
         $order->set_billing_phone($billing_phone);
         $order->set_payment_method('credicard');
         $order->set_payment_method_title('Pago vía Credicard');

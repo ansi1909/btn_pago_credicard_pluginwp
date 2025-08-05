@@ -54,12 +54,21 @@ jQuery(function ($) {
 
   function createPaymentRequest() {
     return new Promise((resolve, reject) => {
+      console.log("Finalizando orden con:", {
+            fecha_asistencia: typeof fechaAsistencia !== "undefined" ? fechaAsistencia : "",
+            email: $('input[name="billing_email"]').val()
+        });
       $.ajax({
         url: credicard_params.ajax_url,
         method: "POST",
         data: {
           action: "credicard_create_payment",
           security: credicard_params.nonce_create,
+          billing_first_name: $('input[name="billing_first_name"]').val(),
+          billing_last_name: $('input[name="billing_last_name"]').val(),
+          billing_email: $('input[name="billing_email"]').val(),
+          billing_phone: $('input[name="billing_phone"]').val(),
+          fecha_asistencia: typeof fechaAsistencia !== "undefined" ? fechaAsistencia : ""
         },
         success: function (resp, textStatus, xhr) {
           if (xhr.responseText.trim() === '-1') {
