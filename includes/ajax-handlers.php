@@ -86,6 +86,44 @@ function credicard_create_payment_handler() {
 
         error_log("[Credicard] BILLING DATA GUARDADO EN TRANSIENT: " . print_r($billing_data, true));
 
+        $user_id = get_current_user_id();
+        if(!$user_id && !email_exists($billing_data['billing_email'])){
+            $username = sanitize_user(current(explode('@', $billing_data['billing_email'])));
+            $password = wp_generate_password();
+            $user_id = wc_create_new_customer(
+                $billing_data['billing_email'],
+                $username,
+                $password
+            );
+        }
+
+        $order = wc_create_order(['customer_id' => $user_id]);
+        $order->set_payment_method('credicard');
+        $order->set_payment_method_title('Credicard');
+        $order->set_billing_first_name($billing_data['billing_first_name']);
+        $order->set_billing_last_name($billing_data['billing_last_name']);
+        $order->set_billing_email($billing_data['billing_email']);
+        $order->set_billing_phone($billing_data['billing_phone']);
+
+        foreach ($billing_data['cart_items'] as $item) {
+            $product = wc_get_product($item['product_id']);
+            if ($product) {
+                $item_id = $order->add_product($product, $item['quantity']);
+                if (!empty($item['fecha_asistencia'])) {
+                    wc_add_order_item_meta($item_id, '_fecha_asistencia', $item['fecha_asistencia']);
+                }
+            }
+        }
+
+        $order->add_meta_data('_credicard_payment_id', $payment_id);
+        if (!empty($billing_data['fecha_asistencia'])) {
+            $order->add_meta_data('fecha_asistencia', $billing_data['fecha_asistencia']);
+        }
+
+        $order->calculate_totals();
+        $order->update_status('pending');
+        $order->save();
+
         wp_send_json_success([
             'id' => $payment_id,
             'paymentUrl' => $data['data']['paymentUrl'],

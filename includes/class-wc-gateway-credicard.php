@@ -150,22 +150,27 @@ function credicard_finalize_order() {
         wp_send_json_error(['message' => 'Petición no autorizada.']);
     }
 
-    $billing_data = isset($_POST['billing_data']) ? $_POST['billing_data'] : [];
-    $fecha_asistencia = $_POST['fecha_asistencia'] ?? null;
     $payment_id = sanitize_text_field($_POST['payment_id'] ?? '');
     if (empty($payment_id)) {
         wp_send_json_error(['message' => 'Falta el payment_id.']);
     }
 
     // Validar si ya existe una orden con este payment_id
-    $existing_orders = wc_get_orders([
+    $orders = wc_get_orders([
         'meta_key'   => '_credicard_payment_id',
         'meta_value' => $payment_id,
         'limit'      => 1,
     ]);
 
-    if (!empty($existing_orders)) {
-        wp_send_json_error(['message' => 'Esta orden ya fue creada anteriormente.']);
+    if (empty($orders)) {
+        wp_send_json_error(['message' => 'No se encontró una orden con este payment_id.']);
+    }
+
+    $order = $orders[0];
+
+    // Validar si la orden ya ha sido completada
+    if ($order->has_status(['processing', 'completed'])) {
+        wp_send_json_error(['message' => 'La orden ya fue procesada.']);
     }
 
     $client_id = $gateway->client_id;
@@ -194,74 +199,6 @@ function credicard_finalize_order() {
     }
 
     try {
-
-        $user_id = null;
-        $billing_email = sanitize_email($billing_data['billing_email'] ?? '');
-        $billing_first_name = sanitize_text_field($billing_data['billing_first_name'] ?? '');
-        $billing_last_name = sanitize_text_field($billing_data['billing_last_name'] ?? '');
-        $billing_phone = sanitize_text_field($billing_data['billing_phone'] ?? '');
-
-        if (!is_user_logged_in() && !empty($billing_email)) {
-
-            if (email_exists($billing_email)) {
-                // Usuario existente
-                $user = get_user_by('email', $billing_email);
-                $user_id = $user->ID;
-                error_log("[Credicard] Usuario existente identificado con ID: $user_id");
-            }
-            else{
-
-                // Crear nuevo usuario
-                $username = sanitize_user(current(explode('@', $billing_email)));
-                $password = wp_generate_password();
-
-                $user_id = wc_create_new_customer(
-                    $billing_email,
-                    $username,
-                    $password
-                );
-
-                if (is_wp_error($user_id)) {
-                    error_log("[Credicard] Error al crear usuario: " . $user_id->get_error_message());
-                    throw new Exception($user_id->get_error_message());
-                }
-
-                //Actualizar metadatos del billing del usuario
-
-                error_log("[Credicard] Nuevo usuario creado con ID: $user_id");
-
-                update_user_meta( $user_id, 'billing_phone', $billing_phone );
-                update_user_meta( $user_id, 'billing_first_name', $billing_first_name );
-                update_user_meta( $user_id, 'billing_last_name', $billing_last_name );
-                
-                //Actualiza datos adicionales del usuario
-                // Opcional: Asignar datos adicionales (nombre, apellido, etc.)
-                wp_update_user( [
-                    'ID' => $user_id,
-                    'first_name' => $billing_first_name,
-                    'last_name' => $billing_last_name,
-                ] );
-                // Autenticar al nuevo usuario
-                wp_set_current_user($user_id);
-                wc_set_customer_auth_cookie($user_id);
-
-            }  
-        } elseif (is_user_logged_in()) {
-            $user_id = get_current_user_id();
-        }
-       
-        //Crear la orden
-        $order = wc_create_order(['customer_id' => $user_id]);
-
-        foreach (WC()->cart->get_cart() as $cart_item_key => $values) {
-            $product = $values['data'];
-            $quantity = $values['quantity'];
-            //$order->add_product($product, $quantity);
-            $item_id = $order->add_product($product, $quantity);
-            if ($fecha_asistencia) {
-                wc_add_order_item_meta($item_id, '_fecha_asistencia', $fecha_asistencia);
-            }
-        }
 
         $voucher =  '
         <!DOCTYPE html>
@@ -323,16 +260,8 @@ function credicard_finalize_order() {
         </html>
         ';
         
-        $order->calculate_totals();
-        $order->payment_complete();
         $order->update_meta_data('credicard_voucher', $voucher);
-        $order->update_meta_data('_credicard_payment_id', $payment_id);
         $order->update_meta_data('_credicard_ref', $body['data']['transaction']['receipt']['result']['ref'] ?? '');
-        $order->set_billing_first_name($billing_first_name);
-        $order->set_billing_last_name($billing_last_name);
-        $order->set_billing_email($billing_email);
-        $order->set_billing_phone($billing_phone);
-        $order->set_payment_method('credicard');
         $order->set_payment_method_title('Pago vía Credicard');
         $order->set_status('completed', 'Pago Credicard validado');
         $order->save();
